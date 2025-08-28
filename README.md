@@ -1,6 +1,6 @@
 # MC-CAST
 
-**MC-CAST** - _Markov Chains and Cellular Automata Simulation Tool_ - is a project that simulates land use change for the municipality of Santa Cruz do Sul, Brazil, from 1985 to 2040.
+**MC-CAST** - _Markov Chains and Cellular Automata Simulation Tool_ - is a project that simulates land use change for a Brazilian municipality, from 1985 to 2040.
 
 The tool uses a combined model of Markov Chains and Cellular Automata to predict urban expansion, integrating historical data from the MapBiomas Project with neighborhood transition rules.
 
