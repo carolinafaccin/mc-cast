@@ -7,13 +7,10 @@ The tool uses a combined model of Markov Chains and Cellular Automata to predict
 The project aims to serve as a practical framework for studying urban modeling with Markov Chains and Cellular Automata.
 
 ## Overview
-**Data-driven simulation**: The model is trained on a 1985–2015 dataset and validated against real changes from 2015 to 2023.
-
-**Predictive capability**: It generates projections of land-use change up to 2040, helping to visualize future urban sprawl and its impacts.
-
-**Replicable framework**: The code is designed to be easily adapted for other municipalities, requiring only new data inputs.
-
-**Modular design**: The project is organized into distinct modules for data processing, model simulation, and analysis.
+- **Data-driven simulation**: The model is trained on a 1985–2015 dataset and validated against real changes from 2015 to 2023.
+- **Predictive capability**: It generates projections of land-use change up to 2040, helping to visualize future urban sprawl and its impacts.
+- **Replicable framework**: The code is designed to be easily adapted for other municipalities, requiring only new data inputs.
+- **Modular design**: The project is organized into distinct modules for data processing, model simulation, and analysis.
 
 ## Repository structure
 ```
