@@ -1,3 +1,5 @@
+![Status](https://img.shields.io/badge/status-planned-yellow.svg)
+
 # MC-CAST
 
 **MC-CAST** - _Markov Chains and Cellular Automata Simulation Tool_ - is a project that simulates land use change for a Brazilian municipality, from 1985 to 2040.
