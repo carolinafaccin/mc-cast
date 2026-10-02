@@ -128,8 +128,12 @@ mc-cast/
 │   ├── validate.py    # figure of merit, kappa
 │   ├── pipeline.py    # train / validate / project
 │   ├── export.py      # maps, plots and tables
+│   ├── style.py       # figure style: source line and repository name
+│   ├── brand.py       # visual identity (colors, Source Code Pro, layout); copied from
+│   │                  # the author's brand repository, do not edit here
 │   └── cli.py
 ├── tests/             # synthetic-grid tests
+├── assets/fonts/      # Source Code Pro (SIL OFL)
 ├── docs/              # method notes
 ├── data/              # raw/ and processed/ rasters (git-ignored)
 └── outputs/           # metrics, tables, figures (rasters git-ignored)
@@ -140,6 +144,7 @@ mc-cast/
 - [MapBiomas](https://mapbiomas.org) land use and land cover, Collection 10 (CC BY 4.0).
 - Municipal boundaries via [geobr](https://github.com/ipeaGIT/geobr) (IBGE). Municipality list from the IBGE localities API (metropolitan region 07401).
 - Roads: © OpenStreetMap contributors (ODbL).
+- Figures use the Source Code Pro typeface (SIL Open Font License).
 
 ## License
 
