@@ -21,6 +21,8 @@ Everything below was produced by `mccast all` with the default configuration; th
 | 2023 | 787 | 7.6% | MapBiomas |
 | 2040 | 959 | 9.3% | Projection (+22% over 2023) |
 
+![Urban area, observed and modeled](outputs/urban_area.png)
+
 The region covers about 10,300 km². Full class-by-class areas are in [`outputs/area_by_class.csv`](outputs/area_by_class.csv).
 
 ### What the model learned
@@ -128,7 +130,6 @@ mc-cast/
 │   ├── export.py      # maps, plots and tables
 │   └── cli.py
 ├── tests/             # synthetic-grid tests
-├── notebooks/         # exploration of the outputs
 ├── docs/              # method notes
 ├── data/              # raw/ and processed/ rasters (git-ignored)
 └── outputs/           # metrics, tables, figures (rasters git-ignored)

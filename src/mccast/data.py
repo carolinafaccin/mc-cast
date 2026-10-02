@@ -30,7 +30,8 @@ def study_area(cfg: C.Config):
     out = gpd.GeoDataFrame(geometry=[area.to_crs(4326).geometry.union_all()], crs=4326)
     C.RAW.mkdir(parents=True, exist_ok=True)
     out.to_file(cache, driver="GPKG")
-    area[["code_muni", "name_muni"]].to_csv(C.RAW / f"{cfg['region']['slug']}_municipalities.csv", index=False)
+    table = area[["code_muni", "name_muni"]].rename(columns={"code_muni": "cd_mun", "name_muni": "nm_mun"})
+    table.astype({"cd_mun": int}).to_csv(C.RAW / f"{cfg['region']['slug']}_municipalities.csv", index=False)
     return out
 
 
