@@ -1,0 +1,14 @@
+{
+  "from": 2015,
+  "to": 2023,
+  "observed_new_urban_cells": 68323,
+  "simulated_new_urban_cells": 102733,
+  "hits": 18473,
+  "misses": 49850,
+  "false_alarms": 84260,
+  "figure_of_merit": 0.12106853319177104,
+  "producer_accuracy": 0.27037747171523496,
+  "user_accuracy": 0.17981563859714017,
+  "kappa_urban": 0.9292766627549653,
+  "no_change_figure_of_merit": 0.0
+}
