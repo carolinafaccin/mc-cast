@@ -210,3 +210,8 @@ __marimo__/
 .DS_Store
 
 data/*
+# MC-CAST outputs: keep the light results (png, csv, json), not the rasters
+outputs/*.tif
+
+# osmnx cache (no longer used)
+cache/

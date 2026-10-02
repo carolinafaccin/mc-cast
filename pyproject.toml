@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mccast"
+version = "0.1.0"
+description = "Markov Chains and Cellular Automata Simulation Tool for urban growth, based on MapBiomas land-cover data"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pyyaml",
+    "matplotlib",
+    "pandas",
+    "rasterio",
+    "geopandas",
+    "geobr",
+    "requests",
+    "shapely",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "jupyter"]
+
+[project.scripts]
+mccast = "mccast.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
