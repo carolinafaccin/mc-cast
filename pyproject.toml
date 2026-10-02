@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "jupyter"]
+dev = ["pytest"]
 
 [project.scripts]
 mccast = "mccast.cli:main"
