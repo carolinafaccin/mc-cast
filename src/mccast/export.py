@@ -9,14 +9,8 @@ import numpy as np
 
 from . import config as C
 from . import data
+from . import style as S
 
-# Palette: validated with the dataviz skill's validator (light surface, all pairs, since
-# map classes can sit next to each other in any combination). "Other" and no-data are neutrals.
-SURFACE = "#fcfcfb"
-INK, INK_2, MUTED, GRID, BASELINE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
-NEUTRAL = "#f0efec"
-COLORS = {0: SURFACE, 1: "#1baf7a", 2: "#eda100", 3: "#4a3aa7", 4: "#2a78d6", 5: BASELINE}
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]  # categorical slots 1-3
 
 
 def _plt():
@@ -25,44 +19,13 @@ def _plt():
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    plt.rcParams.update({
-        "font.family": "sans-serif",
-        "font.sans-serif": ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"],
-        "font.size": 9,
-        "text.color": INK,
-        "axes.labelcolor": INK_2,
-        "axes.edgecolor": BASELINE,
-        "axes.facecolor": SURFACE,
-        "axes.linewidth": 0.8,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "axes.titlesize": 10,
-        "axes.titleweight": "bold",
-        "axes.titlelocation": "left",
-        "axes.titlecolor": INK,
-        "xtick.color": MUTED,
-        "ytick.color": MUTED,
-        "xtick.labelcolor": INK_2,
-        "ytick.labelcolor": INK_2,
-        "figure.facecolor": SURFACE,
-        "savefig.facecolor": SURFACE,
-        "legend.frameon": False,
-    })
+    S.setup()
     return plt
-
-
-def _title(fig, title: str, subtitle: str = "") -> None:
-    fig.text(0.01, 0.995, title, fontsize=12, fontweight="bold", va="top")
-    if subtitle:
-        fig.text(0.01, 0.995 - 0.28 / fig.get_figheight(), subtitle, fontsize=9, color=INK_2, va="top")
 
 
 def _save(fig, name: str) -> Path:
     p = C.OUTPUTS / name
-    fig.savefig(p, dpi=200, bbox_inches="tight", pad_inches=0.15)
-    import matplotlib.pyplot as plt
-
-    plt.close(fig)
+    S.save(fig, p)
     return p
 
 
@@ -101,27 +64,37 @@ def area_table(cfg: C.Config) -> Path:
 
 
 def _rgb(arr: np.ndarray, colors: dict[int, str]) -> np.ndarray:
-    rgb = np.zeros((*arr.shape, 3), dtype=np.uint8)
-    for cid, hexc in colors.items():
-        rgb[arr == cid] = [int(hexc[i:i + 2], 16) for i in (1, 3, 5)]
+    from matplotlib.colors import to_rgb
+
+    rgb = np.full((*arr.shape, 3), 255, dtype=np.uint8)
+    for cid, c in colors.items():
+        rgb[arr == cid] = [round(v * 255) for v in to_rgb(c)]
     return rgb
 
 
 def _map(ax, arr, colors, aspect, title=None):
     ax.imshow(_rgb(arr, colors), interpolation="nearest", aspect=aspect)
     if title:
-        ax.set_title(title, pad=4)
+        ax.set_title(title, loc="left", fontsize=10, fontweight="semibold", color=S.INK, pad=4)
     ax.axis("off")
 
 
-def _legend(fig, items, y=0.0, ncol=None):
+def _legend(fig, items, inches=0.55, ncol=None):
+    """Swatch legend in one row, a fixed distance (in inches) above the bottom edge (over the footer)."""
     from matplotlib.patches import Patch
 
     fig.legend(
         handles=[Patch(facecolor=c, edgecolor="none", label=l) for c, l in items],
-        loc="lower left", ncol=ncol or len(items), bbox_to_anchor=(0.01, y),
-        handlelength=1.0, handleheight=1.0, columnspacing=1.6, fontsize=9, labelcolor=INK_2,
+        loc="lower left", ncol=ncol or len(items), bbox_to_anchor=(0.03, S.bottom(fig, inches)),
+        handlelength=1.0, handleheight=1.0, columnspacing=1.4, handletextpad=0.5, fontsize=8.5, labelcolor=S.INK,
     )
+
+
+def _value_axis(ax):
+    """Recessive value axis: horizontal grid only, no left spine or ticks."""
+    ax.grid(axis="x", visible=False)
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(axis="y", length=0)
 
 
 def maps(cfg: C.Config) -> list[Path]:
@@ -139,15 +112,16 @@ def maps(cfg: C.Config) -> list[Path]:
         panels.append((_read(proj), f"{y['horizon']} projected"))
 
     out = []
-    fig, axes = plt.subplots(2, 2, figsize=(9, 6.6), gridspec_kw={"hspace": 0.08, "wspace": 0.02})
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8.6), gridspec_kw={"hspace": 0.1, "wspace": 0.03})
     for ax, (arr, title) in zip(axes.ravel(), panels):
-        _map(ax, arr, COLORS, aspect, title)
+        _map(ax, arr, S.CLASS_COLORS, aspect, title)
     for ax in axes.ravel()[len(panels):]:
         ax.axis("off")
-    _title(fig, f"Land cover, {cfg['region']['name']}",
-           "MapBiomas Collection 10, simplified to 5 classes. 2040 is a model projection, not a forecast.")
-    fig.subplots_adjust(top=0.88, bottom=0.07)
-    _legend(fig, [(COLORS[c], s["label"]) for c, s in cfg.classes.items()])
+    S.header(fig, f"Land cover, {cfg['region']['name']}",
+             "MapBiomas Collection 10, simplified to 5 classes. 2040 is a model projection, not a forecast.")
+    fig.subplots_adjust(left=0.03, right=0.97, top=S.frac(fig, 1.4), bottom=S.bottom(fig, 0.95))
+    _legend(fig, [(S.CLASS_COLORS[c], s["label"]) for c, s in cfg.classes.items()])
+    S.footer(fig)
     out.append(_save(fig, "maps_land_cover.png"))
 
     sim_path = C.OUTPUTS / f"lulc_{y['validation_end']}_sim.tif"
@@ -168,7 +142,8 @@ def _validation_map(plt, cfg, t0, obs, sim, aspect) -> Path:
     cmp[uo & us & ~u0] = 3                # hit
     cmp[uo & ~us & ~u0] = 4               # miss
     cmp[~uo & us & ~u0] = 5               # false alarm
-    colors = {0: SURFACE, 1: NEUTRAL, 2: BASELINE, 3: SERIES[0], 4: SERIES[1], 5: SERIES[2]}
+    hit, miss, false = S.CAT[:3]
+    colors = {0: "white", 1: S.LAND, 2: S.GREY, 3: hit, 4: miss, 5: false}
 
     # Zoom on the window with the most new urban cells (observed or simulated).
     h = max(t0.shape[0] // 6, 200)
@@ -177,25 +152,26 @@ def _validation_map(plt, cfg, t0, obs, sim, aspect) -> Path:
     r, c = np.unravel_index(np.argmax(density), density.shape)
     r0, c0 = max(r - h // 2, 0), max(c - w // 2, 0)
 
-    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(10, 4.6), gridspec_kw={"width_ratios": [1.15, 1], "wspace": 0.05})
+    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(11, 6.2), gridspec_kw={"width_ratios": [1.15, 1], "wspace": 0.05})
     _map(ax0, cmp, colors, aspect, "Whole region")
-    ax0.add_patch(Rectangle((c0, r0), w, h, fill=False, edgecolor=INK, lw=1))
+    ax0.add_patch(Rectangle((c0, r0), w, h, fill=False, edgecolor=S.INK, lw=1))
     _map(ax1, cmp[r0:r0 + h, c0:c0 + w], colors, aspect, "Detail: area with the most new urban cells")
     for s in ax1.spines.values():
         s.set_visible(True)
-        s.set_edgecolor(INK)
+        s.set_edgecolor(S.INK)
     m = json.loads((C.OUTPUTS / "metrics.json").read_text()) if (C.OUTPUTS / "metrics.json").exists() else None
     sub = "New urban area: where the model placed it vs. where it actually appeared."
     if m:
-        sub += f" Figure of merit {m['figure_of_merit']:.1%}."
-    _title(fig, f"Validation, {y['train_end']}–{y['validation_end']}", sub)
-    fig.subplots_adjust(top=0.84, bottom=0.1)
+        sub += f"\nFigure of merit {m['figure_of_merit']:.1%}."
+    S.header(fig, f"Validation, {y['train_end']}–{y['validation_end']}", sub)
+    fig.subplots_adjust(left=0.03, right=0.97, top=S.frac(fig, 1.75), bottom=S.bottom(fig, 0.95))
     _legend(fig, [
-        (BASELINE, f"Urban in {y['train_end']}"),
-        (SERIES[0], "Hit (observed and simulated)"),
-        (SERIES[1], "Missed (observed only)"),
-        (SERIES[2], "False alarm (simulated only)"),
+        (S.GREY, f"Urban in {y['train_end']}"),
+        (hit, "Hit (observed and simulated)"),
+        (miss, "Missed (observed only)"),
+        (false, "False alarm (simulated only)"),
     ])
+    S.footer(fig)
     return _save(fig, "map_validation.png")
 
 
@@ -210,37 +186,35 @@ def suitability_plot(cfg: C.Config) -> Path | None:
     factors = json.loads(f.read_text())["factors"]
     labels = {"dist_urban": "Distance to urban area", "dist_road": "Distance to main roads"}
     floor = 1e-3  # log axis: lifts of 0 are drawn at the floor and labelled
-    fig, axes = plt.subplots(1, len(factors), figsize=(10, 4), sharey=True, gridspec_kw={"wspace": 0.08})
+    fig, axes = plt.subplots(1, len(factors), figsize=(11, 5.4), sharey=True, gridspec_kw={"wspace": 0.1})
     for ax, (name, d) in zip(np.atleast_1d(axes), factors.items()):
         lifts = np.array(d["lifts"])
         x = np.arange(len(lifts))
         top = np.maximum(lifts, floor)
-        ax.bar(x, np.where(lifts > 0, top - 1, 0), bottom=1, width=0.6, color=SERIES[0], linewidth=0)
-        ax.axhline(1, color=INK_2, lw=0.8, zorder=3)
+        ax.bar(x, np.where(lifts > 0, top - 1, 0), bottom=1, width=0.6, color=S.ORANGE, linewidth=0)
+        ax.axhline(1, color=S.INK, lw=0.8, zorder=3)
         ax.set_yscale("log")
         ax.set_ylim(floor * 0.5, 20)
         ax.yaxis.set_major_locator(FixedLocator([0.001, 0.01, 0.1, 1, 10]))
         ax.yaxis.set_minor_locator(NullLocator())
-        ax.set_yticklabels(["0.001×", "0.01×", "0.1×", "1× (average)", "10×"])
-        ax.grid(axis="y", color=GRID, lw=0.6)
-        ax.set_axisbelow(True)
-        ax.spines["left"].set_visible(False)
-        ax.tick_params(axis="y", length=0)
+        ax.set_yticklabels(["0.001×", "0.01×", "0.1×", "1× (avg)", "10×"])
+        _value_axis(ax)
         ticks = [f"<{d['edges'][0] / 1000:.1f}"] + [f"{e / 1000:.1f}" for e in d["edges"][1:]] + [f">{d['edges'][-1] / 1000:.0f}"]
         ax.set_xticks(x)
-        ax.set_xticklabels(ticks, rotation=0, fontsize=7.5)
+        ax.set_xticklabels(ticks, rotation=90, fontsize=7.5)
         ax.set_xlabel("Distance bin, upper limit (km)")
-        ax.set_title(labels.get(name, name))
+        ax.set_title(labels.get(name, name), loc="left", fontsize=10, fontweight="semibold", color=S.INK)
         ax.annotate(f"{lifts[0]:.1f}×", (0, lifts[0]), xytext=(0, 3), textcoords="offset points",
-                    ha="center", va="bottom", fontsize=9, fontweight="bold", color=INK)
+                    ha="center", va="bottom", fontsize=8.5, fontweight="semibold", color=S.INK)
         for i in np.flatnonzero(lifts == 0):
             ax.annotate("none", (i, 1), xytext=(0, -4), textcoords="offset points",
-                        ha="center", va="top", fontsize=7.5, color=MUTED)
+                        ha="center", va="top", fontsize=7.5, color=S.MUTED, rotation=90)
     np.atleast_1d(axes)[0].set_ylabel("Urbanization rate vs. regional average")
     y = cfg["years"]
-    _title(fig, f"Where land urbanized, {y['start']}–{y['train_end']}",
-           "Share of cells that became urban in each distance bin, relative to the regional average (log scale).")
-    fig.subplots_adjust(top=0.82)
+    S.header(fig, f"Where land urbanized, {y['start']}–{y['train_end']}",
+             "Share of cells that became urban in each distance bin,\nrelative to the regional average (log scale).")
+    fig.subplots_adjust(left=0.11, right=0.97, top=S.frac(fig, 1.6), bottom=S.bottom(fig, 1.35))
+    S.footer(fig)
     return _save(fig, "suitability_lift.png")
 
 
@@ -251,6 +225,7 @@ def urban_area_plot(cfg: C.Config) -> Path | None:
         return None
     plt = _plt()
     import pandas as pd
+    from matplotlib.lines import Line2D
 
     y = cfg["years"]
     urban = cfg.classes[C.URBAN]["name"]
@@ -260,20 +235,22 @@ def urban_area_plot(cfg: C.Config) -> Path | None:
     if obs.empty:
         return None
 
-    fig, ax = plt.subplots(figsize=(7.5, 4.2))
-    ax.plot(obs.index, obs.values, color=SERIES[0], lw=2, solid_capstyle="round", zorder=3)
-    ax.scatter(obs.index, obs.values, s=40, color=SERIES[0], edgecolor=SURFACE, linewidth=2, zorder=4)
+    observed, model_c = S.INK, S.ORANGE
+    fig, ax = plt.subplots(figsize=(9, 5.6))
+    ax.plot(obs.index, obs.values, color=observed, lw=2, solid_capstyle="round", zorder=3)
+    ax.scatter(obs.index, obs.values, s=44, color=observed, edgecolor="white", linewidth=2, zorder=4)
     model = []
     if y["validation_end"] in sim.index and y["train_end"] in obs.index:
         model.append(([y["train_end"], y["validation_end"]], [obs[y["train_end"]], sim[y["validation_end"]]]))
     if y["horizon"] in sim.index and y["validation_end"] in obs.index:
         model.append(([y["validation_end"], y["horizon"]], [obs[y["validation_end"]], sim[y["horizon"]]]))
     for xs, ys in model:
-        ax.plot(xs, ys, color=SERIES[1], lw=2, ls=(0, (4, 2)), dash_capstyle="round", zorder=2)
-        ax.scatter(xs[1:], ys[1:], s=40, color=SERIES[1], edgecolor=SURFACE, linewidth=2, zorder=4)
+        ax.plot(xs, ys, color=model_c, lw=2, ls=(0, (4, 2)), dash_capstyle="round", zorder=2)
+        ax.scatter(xs[1:], ys[1:], s=44, color=model_c, edgecolor="white", linewidth=2, zorder=4)
 
     def label(x, v, text, dy=8, va="bottom"):
-        ax.annotate(text, (x, v), xytext=(0, dy), textcoords="offset points", ha="center", va=va, fontsize=8.5, color=INK)
+        ax.annotate(text, (x, v), xytext=(0, dy), textcoords="offset points", ha="center", va=va,
+                    fontsize=8.5, color=S.INK, path_effects=S.halo())
 
     label(obs.index[0], obs.iloc[0], f"{obs.iloc[0]:,.0f}")
     if y["validation_end"] in obs.index:
@@ -286,21 +263,17 @@ def urban_area_plot(cfg: C.Config) -> Path | None:
     ax.set_ylim(0, max(df.area_km2.max() * 1.18, 1))
     ax.set_xlim(y["start"] - 2, y["horizon"] + 2)
     ax.set_xticks(sorted({*obs.index, *sim.index}))
-    ax.grid(axis="y", color=GRID, lw=0.6)
-    ax.set_axisbelow(True)
-    ax.spines["left"].set_visible(False)
-    ax.tick_params(axis="y", length=0)
+    _value_axis(ax)
     ax.yaxis.set_major_formatter(lambda v, _: f"{v:,.0f}")
     ax.set_ylabel("km²")
-    from matplotlib.lines import Line2D
-
     ax.legend(handles=[
-        Line2D([], [], color=SERIES[0], lw=2, marker="o", markersize=6, markeredgecolor=SURFACE, label="Observed (MapBiomas)"),
-        Line2D([], [], color=SERIES[1], lw=2, ls=(0, (4, 2)), marker="o", markersize=6, markeredgecolor=SURFACE,
-               label=f"Model: validation from {y['train_end']}, projection from {y['validation_end']}"),
-    ], loc="lower right", fontsize=8.5, labelcolor=INK_2)
-    _title(fig, "Urban area", f"{cfg['region']['name']}, km²")
-    fig.subplots_adjust(top=0.84)
+        Line2D([], [], color=observed, lw=2, marker="o", markersize=6, markeredgecolor="white", label="Observed (MapBiomas)"),
+        Line2D([], [], color=model_c, lw=2, ls=(0, (4, 2)), marker="o", markersize=6, markeredgecolor="white",
+               label=f"Model: validation from {y['train_end']},\nprojection from {y['validation_end']}"),
+    ], loc="lower right", fontsize=8.5, labelcolor=S.INK)
+    S.header(fig, "Urban area", f"{cfg['region']['name']}, km²")
+    fig.subplots_adjust(left=0.1, right=0.96, top=S.frac(fig, 1.2), bottom=S.bottom(fig, 0.95))
+    S.footer(fig)
     return _save(fig, "urban_area.png")
 
 
